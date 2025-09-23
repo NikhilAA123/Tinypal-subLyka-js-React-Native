@@ -1,15 +1,50 @@
-import React from "react";
-import { View, Text, StyleSheet, ActivityIndicator } from "react-native";
+import React, { useRef, useEffect } from "react";
+import {
+  View,
+  Text,
+  StyleSheet,
+  ActivityIndicator,
+  Image,
+  ScrollView,
+  Animated,
+} from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
-
-// Import our reusable components and hooks
+import GestureRecognizer from "react-native-swipe-gestures";
 import { getFlashcardData } from "../api/apiService.js";
-import useApi from "../hooks/useApi";
-import Header from "../components/header.jsx";
+import useApi from "../hooks/apiUse.js";
+import { API_BASE_URL } from "../utils/constants.js";
+import Header from "../components/Header.jsx";
 
-// Component now accepts the { navigation } prop
 const FlashcardScreen = ({ navigation }) => {
   const { data, loading, error } = useApi(getFlashcardData);
+
+  // Animation refs
+  const cardAnim = useRef(new Animated.Value(0)).current;
+  const imageScale = useRef(new Animated.Value(0.8)).current;
+  const textFade = useRef(new Animated.Value(0)).current;
+
+  // Animate on mount
+  useEffect(() => {
+    Animated.sequence([
+      Animated.spring(cardAnim, {
+        toValue: 1,
+        useNativeDriver: true,
+        friction: 5,
+      }),
+      Animated.parallel([
+        Animated.timing(imageScale, {
+          toValue: 1,
+          duration: 500,
+          useNativeDriver: true,
+        }),
+        Animated.timing(textFade, {
+          toValue: 1,
+          duration: 500,
+          useNativeDriver: true,
+        }),
+      ]),
+    ]).start();
+  }, []);
 
   if (loading) {
     return (
@@ -27,70 +62,107 @@ const FlashcardScreen = ({ navigation }) => {
     );
   }
 
-  // Static content from the PDF design
-  const staticContent = {
-    title: "What Qualifies as Distractions?",
-    description: "Toys and screens? Obvious distractions. But so are:",
-    examples: [
-      '"Open your mouth! Here comes an aeroplane wooooo!!"',
-      "\"Look there's a bird!\", as the bite goes in <child name>'s mouth.",
-      '"I\'m closing my eyes. Let me see who comes to take a bite: you or the cat!"',
-    ],
-  };
+  const imageUrl = data.image_url ? `${API_BASE_URL}${data.image_url}` : null;
 
   return (
     <SafeAreaView style={styles.container}>
-      {/* The Header now uses onBackPress with the navigation prop */}
       <Header
         title="UNLEARN OLD PATTERNS"
-        subtitle={data.title || "No Distractions 101"}
-        onBackPress={() => navigation.goBack()}
+        subtitle={data.title || "Flashcard"}
       />
+      <GestureRecognizer
+        onSwipeRight={() => navigation.navigate("DidYouKnow")}
+        config={{ velocityThreshold: 0.3, directionalOffsetThreshold: 80 }}
+        style={{ flex: 1 }}
+      >
+        <ScrollView contentContainerStyle={{ padding: 20 }}>
+          <Animated.View
+            style={[styles.card, { transform: [{ scale: cardAnim }] }]}
+          >
+            {imageUrl && (
+              <Animated.Image
+                source={{ uri: imageUrl }}
+                style={[styles.image, { transform: [{ scale: imageScale }] }]}
+              />
+            )}
 
-      <View style={styles.contentContainer}>
-        <View style={styles.card}>
-          <Text style={styles.cardTitle}>{staticContent.title}</Text>
-          <Text style={styles.cardDescription}>
-            {staticContent.description}
-          </Text>
-          {staticContent.examples.map((item, index) => (
-            <Text key={index} style={styles.exampleText}>
-              - {item}
+            <Animated.Text style={[styles.cardTitle, { opacity: textFade }]}>
+              {data.title}
+            </Animated.Text>
+
+            <Animated.Text style={[styles.cardContent, { opacity: textFade }]}>
+              {data.content}
+            </Animated.Text>
+
+            {data.citation?.label && (
+              <Animated.Text
+                style={[styles.citationText, { opacity: textFade }]}
+              >
+                {data.citation.label}
+              </Animated.Text>
+            )}
+          </Animated.View>
+          <View style={styles.swipeHint}>
+            <Text style={styles.swipeHintText}>
+              <Text style={{ fontSize: 18, color: "white" }}>• </Text>
+              <Text style={{ fontSize: 18, color: "grey" }}>•</Text>
             </Text>
-          ))}
-        </View>
-      </View>
+          </View>
+        </ScrollView>
+      </GestureRecognizer>
     </SafeAreaView>
   );
 };
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: "#f0f0f0" },
+  container: { flex: 1, backgroundColor: "#000000fa" },
   centered: { flex: 1, justifyContent: "center", alignItems: "center" },
-  contentContainer: { padding: 20 },
   card: {
-    backgroundColor: "white",
-    borderRadius: 10,
-    padding: 20,
-    shadowColor: "#000",
+    backgroundColor: "rgba(91, 171, 233, 0.8)",
+    borderRadius: 25,
+    padding: 25,
+    shadowColor: "#98189fff",
     shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.1,
-    shadowRadius: 4,
-    elevation: 3,
+    shadowOpacity: 0.25,
+    shadowRadius: 3.84,
+    elevation: 5,
+    marginBottom: 20,
+    alignItems: "center",
+  },
+  image: {
+    width: "100%",
+    height: 250,
+    resizeMode: "cover",
+    borderRadius: 15,
+    marginBottom: 20,
   },
   cardTitle: {
-    fontSize: 20,
+    fontSize: 22,
     fontWeight: "bold",
-    marginBottom: 10,
-    color: "#333",
+    color: "white",
+    marginBottom: 15,
+    textAlign: "center",
   },
-  cardDescription: { fontSize: 16, color: "#555", marginBottom: 15 },
-  exampleText: {
-    fontSize: 14,
-    color: "#666",
-    fontStyle: "italic",
-    marginBottom: 10,
-    lineHeight: 20,
+  cardContent: {
+    fontSize: 16,
+    color: "white",
+    lineHeight: 24,
+    textAlign: "center",
+    marginBottom: 15,
+  },
+  swipeHint: {
+    backgroundColor: "rgba(91, 171, 233, 0.8)",
+    marginHorizontal: 20,
+    marginTop: 20,
+    marginBottom: 20,
+    padding: 15,
+    borderRadius: 15,
+    alignItems: "center",
+  },
+  swipeHintText: {
+    color: "white",
+    fontWeight: "bold",
+    fontSize: 16,
   },
 });
 

@@ -6,17 +6,16 @@ import {
   Text,
   ActivityIndicator,
   Image,
-  TouchableOpacity,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
+import GestureRecognizer from "react-native-swipe-gestures";
 
 // Import our separated logic and reusable components
-import { getDidYouKnowData } from "../api/apiService";
-import useApi from "../hooks/useApi";
-import { API_BASE_URL } from "../utils/constants";
-import Header from "../components/header.jsx";
+import { getDidYouKnowData } from "../api/apiService.js";
+import useApi from "../hooks/apiUse.js";
+import { API_BASE_URL } from "../utils/constants.js";
+import Header from "../components/Header.jsx";
 
-// Component now accepts the { navigation } prop
 const DidYouKnowScreen = ({ navigation }) => {
   const { data, loading, error } = useApi(getDidYouKnowData);
 
@@ -44,55 +43,80 @@ const DidYouKnowScreen = ({ navigation }) => {
         title="UNLEARN OLD PATTERNS"
         subtitle={data.title || "Distractions-No No"}
       />
-      <ScrollView>
-        {imageUrl && <Image source={{ uri: imageUrl }} style={styles.image} />}
-        <View style={styles.card}>
-          <View style={styles.didYouKnowLabel}>
-            <Text style={styles.didYouKnowIcon}>💡</Text>
-            <Text style={styles.didYouKnowText}>DID YOU KNOW?</Text>
-          </View>
-          <View style={styles.causeEffectContainer}>
-            <Text style={styles.causeEffectBox}>
-              {data.cause_and_effect.cause}
-            </Text>
-            <Text style={styles.arrow}>→</Text>
-            <Text style={styles.causeEffectBox}>
-              {data.cause_and_effect.effect}
-            </Text>
-          </View>
-          <Text style={styles.contentText}>{data.content}</Text>
-          <Text style={styles.citationText}>{data.citation.label}</Text>
-        </View>
 
-        {/* Navigation button updated to use TouchableOpacity */}
-        <TouchableOpacity
-          style={styles.button}
-          onPress={() => navigation.navigate("Flashcard")}
-        >
-          <Text style={styles.buttonText}>Go to Flashcard Screen</Text>
-        </TouchableOpacity>
-      </ScrollView>
+      <GestureRecognizer
+        onSwipeLeft={() => navigation.navigate("Flashcard")}
+        config={{ velocityThreshold: 0.3, directionalOffsetThreshold: 80 }}
+        style={{ flex: 1 }}
+      >
+        <ScrollView contentContainerStyle={{ paddingBottom: 60 }}>
+          {imageUrl && (
+            <Image source={{ uri: imageUrl }} style={styles.image} />
+          )}
+
+          <View style={styles.card}>
+            <View style={styles.didYouKnowLabel}>
+              <Text style={styles.didYouKnowIcon}>💡</Text>
+              <Text style={styles.didYouKnowText}>
+                DID YOU{"\n"}
+                KNOW <Text style={{ color: "red" }}>?</Text>
+              </Text>
+            </View>
+
+            <View style={styles.causeEffectContainer}>
+              <Text style={styles.causeEffectBox}>
+                {data.cause_and_effect.cause}
+              </Text>
+              <Text style={styles.arrow}>➳</Text>
+              <Text style={styles.causeEffectBox}>
+                {data.cause_and_effect.effect}
+              </Text>
+            </View>
+
+            <Text style={styles.contentText}>{data.content}</Text>
+            <Text style={styles.citationText}>{data.citation.label}</Text>
+          </View>
+
+          {/* Modern Swipe Hint with two dots */}
+          <View style={styles.swipeHint}>
+            <Text style={styles.swipeHintText}>
+              <Text style={{ fontSize: 18, color: "white" }}>• </Text>
+              <Text style={{ fontSize: 18, color: "grey" }}>•</Text>
+            </Text>
+          </View>
+        </ScrollView>
+      </GestureRecognizer>
     </SafeAreaView>
   );
 };
-
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: "#fff" },
+  container: {
+    flex: 1,
+    backgroundColor: "#000000fa",
+  },
   centered: {
     flex: 1,
     justifyContent: "center",
     alignItems: "center",
     backgroundColor: "#fff",
   },
-  image: { width: "100%", height: 250, resizeMode: "cover" },
-  card: {
-    backgroundColor: "rgba(255, 105, 180, 0.8)",
-    margin: 20,
-    borderRadius: 20,
-    padding: 20,
-    marginTop: -40,
+  image: {
+    width: "100%",
+    height: 300,
+    resizeMode: "cover",
   },
-  didYouKnowLabel: {
+  card: {
+    backgroundColor: "rgba(199, 81, 127, 0.8)",
+    Horizontal: 10.5,
+    Vertical: 30, // side margins
+    marginTop: -38, // space above the card
+    padding: 30, // inner spacing
+    borderRadius: 70, // rounded top left
+    // rounded top right
+    borderBottomLeftRadius: 50, // flat bottom
+    borderBottomRightRadius: 50,
+  },
+  /* didYouKnowLabel: {
     flexDirection: "row",
     alignItems: "center",
     alignSelf: "center",
@@ -102,14 +126,52 @@ const styles = StyleSheet.create({
     paddingHorizontal: 15,
     position: "absolute",
     top: -20,
+  },*/
+  didYouKnowLabel: {
+    // --- The following properties are new or updated ---
+    paddingVertical: 4, // A bit more vertical padding
+    paddingHorizontal: 10, // A bit more horizontal padding
+    shadowColor: "#98189fff", // Shadow color
+    shadowOffset: {
+      // Shadow position
+      width: 0,
+      height: 2,
+    },
+    shadowOpacity: 0.25, // Shadow visibility
+    shadowRadius: 3.84, // Shadow blur
+    elevation: 5, // Elevation for Android shadow
+
+    // --- These properties remain the same ---
+    position: "absolute",
+    top: -35, // Adjusted slightly for the larger size
+    alignSelf: "center",
+    backgroundColor: "white",
+    borderTopLeftRadius: 80,
+    borderTopRightRadius: 35,
+    borderBottomLeftRadius: 45, // flat bottom
+    borderBottomRightRadius: 15,
+    vertical: -10,
+    Horizontal: -10,
+    transform: [{ skewX: "-10deg" }], // Increased for a more rounded "pill" shape
+    flexDirection: "row",
+    alignItems: "center",
   },
-  didYouKnowIcon: { fontSize: 16, marginRight: 8 },
-  didYouKnowText: { fontWeight: "bold", fontSize: 14 },
+
+  didYouKnowIcon: {
+    fontSize: 45,
+    marginRight: 8,
+    transform: [{ rotate: "-20deg" }],
+  },
+  didYouKnowText: {
+    fontWeight: "bold",
+    fontSize: 14,
+    borderRightRadius: 10,
+  },
   causeEffectContainer: {
     flexDirection: "row",
     justifyContent: "space-around",
     alignItems: "center",
-    marginTop: 30,
+    marginTop: 10,
     marginBottom: 20,
   },
   causeEffectBox: {
@@ -121,8 +183,14 @@ const styles = StyleSheet.create({
     width: "42%",
     fontSize: 14,
     fontWeight: "500",
+    borderWidth: 1,
+    borderColor: "white",
   },
-  arrow: { color: "white", fontSize: 28, fontWeight: "bold" },
+  arrow: {
+    color: "white",
+    fontSize: 28,
+    fontWeight: "bold",
+  },
   contentText: {
     color: "white",
     textAlign: "center",
@@ -136,17 +204,22 @@ const styles = StyleSheet.create({
     fontStyle: "italic",
     marginTop: 10,
     opacity: 0.9,
+    textDecorationLine: "underline",
   },
-  button: {
-    backgroundColor: "#FF69B4",
+  swipeHint: {
+    backgroundColor: "rgba(199, 81, 127, 0.8)",
     marginHorizontal: 20,
-    marginTop: 10,
-    marginBottom: 40,
+    marginTop: 20,
+    marginBottom: 20,
     padding: 15,
-    borderRadius: 10,
+    borderRadius: 15,
     alignItems: "center",
   },
-  buttonText: { color: "white", fontWeight: "bold", fontSize: 16 },
+  swipeHintText: {
+    color: "white",
+    fontWeight: "bold",
+    fontSize: 16,
+  },
 });
 
 export default DidYouKnowScreen;

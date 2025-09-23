@@ -4,7 +4,7 @@ import { createNativeStackNavigator } from "@react-navigation/native-stack";
 
 // Correctly import from your new screens folder
 import DidYouKnowScreen from "./src/screens/DidYouKnowScreen.jsx";
-import FlashcardScreen from "./src/screens/FlashcardScreenTEMP.jsx";
+import FlashcardScreen from "./src/screens/FlashcardScreen.jsx";
 const Stack = createNativeStackNavigator();
 
 const App = () => {
